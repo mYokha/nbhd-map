@@ -1,0 +1,88 @@
+*, *:before, *:after {
+    box-sizing: border-box;
+    font-family: 'Open Sans', sans-serif;
+}
+
+html,
+body,
+#container{
+	height: 100%;
+	width: 100%;
+}
+
+input {
+    font-family: 'Open Sans', sans-serif;
+}
+
+#map {
+	height: 95%;
+	background-color: bisque;
+}
+
+#search {
+	height: 5%;
+	width: 100%;
+}
+
+#search-bar {
+	width: 100%;
+}
+
+#search-input {
+	height: 100%;
+	padding:10px;
+	width: 100%;
+}
+
+.list-item {
+	list-style-type: none;
+	border-bottom: 1px solid #ccc;
+	height: 50px;
+    background-color: aliceblue;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+}
+
+#list-view {
+	width: 100%;
+	height: 50%;
+	overflow-y: scroll;
+	position: absolute;
+	z-index: 10000;
+    padding: 0;
+    margin: 0;
+}
+
+@media only screen and (min-width: 720px) {
+	#map {
+		height: 100%;
+		width: 70%;
+		float: right;
+	}
+	
+	#search {
+		width: 30%;
+		float: left;
+	}
+	
+	#list-view {
+		width: 30%;
+		height: 95%;
+	}
+}
+
+@media only screen and (min-width: 1366px) {
+	#map {
+		width: 80%;
+	}
+	
+	#search {
+		width: 20%;
+		float: left;
+	}
+	
+	#list-view {
+		width: 20%;
+	}
+}
