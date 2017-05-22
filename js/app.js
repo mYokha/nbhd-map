@@ -165,7 +165,7 @@ function getLocation(objArr, id) {
 }
 
 
-
+//Knockout's viewmodel
 function AppViewModel() {
     var self = this;
 	
@@ -174,17 +174,28 @@ function AppViewModel() {
 	// This observable is a need. When you put the cursor into the input field
 	// it makes list of titles visible and hides them when cursor is off.
 	self.isSelected = ko.observable(false);
-	self.testArr = ko.observableArray([]);
-	var filter = self.inputField().toLowerCase();
 
-	console.log(filter);
-	for (var i = 0; i < self.suggestions().length; i++) {
-		var item = self.suggestions()[i];
-		if(item.title.indexOf(filter) != -1){
-			self.testArr.push(item);
-		}
-	}
-	
+    // Now let's try to implement filtering
+    
+    // This is a standard function which for some reason has been removed from knockout starting version 2.0
+    self.stringStartsWith = function (string, startsWith) {          
+        string = string || "";
+        if (startsWith.length > string.length)
+            return false;
+        return string.substring(0, startsWith.length) === startsWith;
+    };
+    
+    // Filtering itself
+	self.filteredItems = ko.computed(function() {
+		if (self.inputField().length > 0) {
+			var optionsArr = self.suggestions();			
+			return ko.utils.arrayFilter(optionsArr, function(item) {
+				 return self.stringStartsWith(item.title.toLowerCase(), self.inputField().toLowerCase());
+			});
+		} else {
+            return self.suggestions();
+        }
+	});
 };
 
 ko.applyBindings(new AppViewModel());
