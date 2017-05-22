@@ -17,11 +17,11 @@
 		<div id="container">
 			<div id="search">
 				<div id="search-bar">
-					<input type="text" id="search-input" data-bind="value: filter, valueUpdate: 'afterkeydown'" placeholder="Input your pub here">
-					
+					<input type="search" id="search-input" data-bind="textInput: inputField, hasFocus: isSelected" placeholder="Input your pub here" autocomplete="off">
+					<!--<input type="button" data-bind="value: filter, valueUpdate: 'afterkeydown'" value="Filter">-->
 				</div>
-				<ul id="list-view" data-bind="foreach: suggestions">
-					<li data-bind="text: $data" class="list-item"></li>
+				<ul id="list-view" data-bind="foreach: testArr, visible: isSelected">
+					<li data-bind="text: $data.title" class="list-item"></li>
 				</ul>
 			</div>
 			<div id="map"></div>

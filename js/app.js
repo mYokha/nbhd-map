@@ -168,30 +168,23 @@ function getLocation(objArr, id) {
 
 function AppViewModel() {
     var self = this;
-	self.suggestions = ko.observableArray([]);
 	
+	self.suggestions = ko.observableArray(locations);
 	self.inputField = ko.observable('');
-	
-	for (var i = 0; i < locations.length; i++){
-		var option = ko.observable();
-		option = locations[i].title;
-		
-		self.suggestions().push(option);
-		
+	// This observable is a need. When you put the cursor into the input field
+	// it makes list of titles visible and hides them when cursor is off.
+	self.isSelected = ko.observable(false);
+	self.testArr = ko.observableArray([]);
+	var filter = self.inputField().toLowerCase();
+
+	console.log(filter);
+	for (var i = 0; i < self.suggestions().length; i++) {
+		var item = self.suggestions()[i];
+		if(item.title.indexOf(filter) != -1){
+			self.testArr.push(item);
+		}
 	}
 	
-	self.inputField = ko.observable('');
-	
-	self.filteredItems = ko.computed(function() {
-		var filter = self.inputField().toLowerCase();
-		if (!filter) {
-			return self.suggestions();
-		} else {
-			return ko.utils.arrayFilter(self.suggestions(), function(item) {
-				return ko.utils.stringStartsWith(item.toLowerCase(), filter);
-			});
-		}
-	}, self);
-	
-}
+};
+
 ko.applyBindings(new AppViewModel());

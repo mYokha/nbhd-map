@@ -16,7 +16,6 @@ input {
 
 #map {
 	height: 95%;
-	background-color: bisque;
 }
 
 #search {
@@ -42,6 +41,10 @@ input {
     padding: 10px;
     display: flex;
     align-items: center;
+}
+
+.list-item: hover {
+	background-color:aquamarine;
 }
 
 #list-view {
