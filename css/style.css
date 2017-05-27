@@ -1,11 +1,18 @@
 *, *:before, *:after {
     box-sizing: border-box;
     font-family: 'Open Sans', sans-serif;
+    outline: none;
+}
+
+body {
+    margin: 0;
+    padding: 0;
 }
 
 html,
 body,
 #container{
+    box-sizing: border-box;
 	height: 100%;
 	width: 100%;
 }
@@ -47,6 +54,11 @@ input {
 	background-color: darkgray;
 }
 
+.list-item:active {
+	background-color:cornflowerblue;
+	color: aliceblue;
+}
+
 #list-view {
 	width: 100%;
 	max-height: 50%;
@@ -72,6 +84,7 @@ input {
 	#list-view {
 		width: 30%;
 		max-height: 95%;
+		height: 95%;
 	}
 }
 

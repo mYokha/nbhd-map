@@ -1,7 +1,8 @@
 //Link to Udacity's APIs course repo: https://github.com/udacity/ud864
 //Initialize google maps
 var map;
-//THat's the place where Anfield is
+
+//That's the place where Anfield is
 var center = {
 	lat: 53.430849,
 	lng: -2.960862
@@ -10,33 +11,61 @@ var center = {
 //An array to hold 10 closest bars
 var markers = [];
 
+function loadJSON(callback) {
 
-//This code was generted from Yelp's Fusion API on a SERVER side. So to make stuff work here, 
-//on the client side I just too the generated array of objects and wwill use it further in my project
+	var xobj = new XMLHttpRequest();
+	xobj.overrideMimeType("application/json");
+	xobj.open('GET', 'js/result.json', false);
+	xobj.onreadystatechange = function () {
+		if (xobj.readyState == 4 && xobj.status == "200") {
+            
+			// Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
+			callback(xobj.responseText);
+		}
+	};
+	xobj.send(null);
+}
+
+var results = [];
+
+ loadJSON(function(response) {
+     
+  // Parse JSON string into object  
+     results = JSON.parse(response);
+ });
+// This code was generted from Yelp's Fusion API on a SERVER side. So to make stuff work here, 
+// on the client side I just too the generated array of objects and wwill use it further in my project
 var locations = [];
+
+// Location constructor
+var Location = function (value, index) {
+	this.id = index;
+	this.title = value.name;
+	
+	this.position = {};
+	this.position.lat = value.coordinates.latitude;
+	this.position.lng = value.coordinates.longitude;
+	
+	this.address = {};
+	this.address.street = value.location.address1;
+	this.address.city = value.location.city;
+	this.address.zipcode = value.location.zip_code;
+	this.address.country = value.location.country;
+	
+	this.yelpProfileURL = value.url;
+	this.phone = value.phone;
+	this.displayPhone = value.display_phone;
+	this.website = '';
+	this.imageURL = '';
+	this.rating = value.rating;
+	this.priceRange = '';
+	this.marker;
+	this.isClicked = false;
+};
+
 for (let i = 0; i < results.length; i++) {
 	var result = results[i];
-	var place = {
-		id: i,
-		title: result.name,
-		position: {
-			lat: result.coordinates.latitude,
-			lng: result.coordinates.longitude
-		},
-		address: {
-			street: result.location.address1,
-			city: result.location.city,
-			zipcode: result.location.zip_code,
-			country: result.location.country
-		},
-		yelpProfileURL: result.url,
-		phone: result.phone,
-		displayPhone: result.display_phone,
-		website: '',
-		imageURL: '',
-		rating: result.rating,
-		priceRange: ''
-	};
+	var place = new Location (result, i);
 
 	if (result.image_url) {
 		place.imageURL = result.image_url;
@@ -61,7 +90,7 @@ function initMap() {
 		zoom: 15,
 		draggable: true
 	});
-
+    
 	var largeInfowindow = new google.maps.InfoWindow();
 	var bounds = new google.maps.LatLngBounds();
 
@@ -73,9 +102,10 @@ function initMap() {
 		animation: google.maps.Animation.DROP,
 		icon: 'img/lfc-icon.png'
 	});
+    
 	// To add the marker to the map, call setMap();
 	markerStadium.setMap(map);
-    
+
 	var infowindow = new google.maps.InfoWindow({
 		content: 'Anfield Road'
 	});
@@ -101,14 +131,17 @@ function initMap() {
 
 	var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
 	var labelIndex = 0;
+    
 	// The following group uses the location array to create an array of markers on initialize.
 	for (var i = 0; i < locations.length; i++) {
+        
 		// Get the position from the location array.
-
 		var position = locations[i].position;
 		var title = locations[i].title;
+		
+		
 		// Create a marker per location, and put into markers array.
-		var marker = new google.maps.Marker({
+		locations[i].marker = new google.maps.Marker({
 			map: map,
 			position: position,
 			title: title,
@@ -117,27 +150,46 @@ function initMap() {
 			id: i,
 			icon: 'img/beer.png'
 		});
+        
 		// Push the marker to our array of markers.
-		markers.push(marker);
+		markers.push(locations[i].marker);
+        
 		// Create an onclick event to open an infowindow at each marker.
-		marker.addListener('click', function () {
+		locations[i].marker.addListener('click', function () {
 			populateInfoWindow(this, largeInfowindow);
 		});
+		
+		locations[i].marker.addListener('click', function () {
+			populateInfoWindow(this, largeInfowindow);
+		});
+		
 		bounds.extend(markers[i].position);
 	}
+    
 	// Extend the boundaries of the map for each marker
 	map.fitBounds(bounds);
 }
+
+// This function helps to get a location from locations array by it's id
+function getLocation(objArr, id) {
+	for (var i = 0; i < objArr.length; i++) {
+		if (objArr[i].id === id) {
+			return objArr[i];
+		}
+	}
+}
+
 // This function populates the infowindow when the marker is clicked. We'll only allow
 // one infowindow which will open at the marker that is clicked, and populate based
 // on that markers position.
 function populateInfoWindow(marker, infowindow) {
+    
 	// Check to make sure the infowindow is not already opened on this marker.
 	if (infowindow.marker != marker) {
 		infowindow.marker = marker;
 		var id = marker.id;
 		var location = getLocation(locations, id);
-		console.log(location);
+		//console.log(location);
 		infowindow.setContent('<div><strong>' + marker.title + '</strong></div><br/>' +
 			location.address.street + '<br>' +
 			location.address.city + '<br>' +
@@ -149,6 +201,7 @@ function populateInfoWindow(marker, infowindow) {
 			'<br><br>' + 'Call here: <a href="tel:' + location.phone + '">' +
 			location.displayPhone + '</a>' + '<br><br>' + '<img src="' + location.imageURL + '" style="width: 200px">');
 		infowindow.open(map, marker);
+        
 		// Make sure the marker property is cleared if the infowindow is closed.
 		infowindow.addListener('closeclick', function () {
 			infowindow.setMarker = null;
@@ -156,46 +209,88 @@ function populateInfoWindow(marker, infowindow) {
 	}
 }
 
-function getLocation(objArr, id) {
-	for (var i = 0; i < objArr.length; i++) {
-		if (objArr[i].id === id) {
-			return objArr[i];
-		}
-	}
-}
-
-
 //Knockout's viewmodel
 function AppViewModel() {
-    var self = this;
-	
+	var self = this;
+
 	self.suggestions = ko.observableArray(locations);
 	self.inputField = ko.observable('');
+	
 	// This observable is a need. When you put the cursor into the input field
 	// it makes list of titles visible and hides them when cursor is off.
 	self.isSelected = ko.observable(false);
+	//self.setIsSelected = function() {
+	//	self.isSelected(true)
+	//};
 
-    // Now let's try to implement filtering
-    
-    // This is a standard function which for some reason has been removed from knockout starting version 2.0
-    self.stringStartsWith = function (string, startsWith) {          
-        string = string || "";
-        if (startsWith.length > string.length)
-            return false;
-        return string.substring(0, startsWith.length) === startsWith;
-    };
-    
-    // Filtering itself
-	self.filteredItems = ko.computed(function() {
+	// Now let's try to implement filtering
+	self.filteredItems = ko.computed(function () {
 		if (self.inputField().length > 0) {
-			var optionsArr = self.suggestions();			
-			return ko.utils.arrayFilter(optionsArr, function(item) {
-				 return self.stringStartsWith(item.title.toLowerCase(), self.inputField().toLowerCase());
+			var optionsArr = self.suggestions();
+			return ko.utils.arrayFilter(optionsArr, function (item) {
+                var chosenItem = item.title.toLowerCase().indexOf(self.inputField().toLowerCase()) > -1;
+                if(!chosenItem){
+                    item.marker.setVisible(false);
+                } else {
+                    item.marker.setVisible(true);
+                }
+                
+				return chosenItem;
 			});
 		} else {
-            return self.suggestions();
-        }
+			return self.suggestions();
+		}
 	});
+	
+	self.liSelected = ko.observable();
+	
+	self.resetClicks = function (arr) {
+		for (var i = 0; i < arr.length; i++) {
+			arr[i].isClicked = false;
+		}
+	};
+	
+	self.isClickedToggle = function (item, arr) {
+		for (var i = 0; i < arr.length; i++) {
+			if (arr[i].id !== item.id) {
+				arr[i].isClicked = false;
+			}
+		}
+		if (!item.isClicked) {
+			item.isClicked = true;
+		} else {
+			item.isClicked = false;
+		}
+	}
+	
+	self.activateMarker = function (item) {
+        //console.log(item);
+        self.isClickedToggle(item, locations);
+		self.liSelected(item.title);
+        /*
+        for(var i = 0; i < locations.length; i++){
+			console.log(locations[i].isClicked);
+            if (locations[i].isClicked){
+                locations[i].marker.setVisible(true);
+            } else {
+                locations[i].marker.setVisible(false);
+            }
+        }*/
+		for(var i = 0; i < locations.length; i++){
+			 if (locations[i].isClicked){
+				 initMap.infowindow.open(map, locations[i]);
+				 console.log(locations[i].marker);
+				 
+				 // Open an infowindow of an item that has .isClicked property set to true
+				 
+				 
+			 }
+		}
+		
+	};
+	
 };
 
-ko.applyBindings(new AppViewModel());
+var appViewModel = new AppViewModel();
+
+ko.applyBindings(appViewModel);
