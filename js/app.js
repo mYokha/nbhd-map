@@ -11,7 +11,7 @@ var center = {
 //An array to hold 10 closest bars
 var markers = [];
 
-var results = [];
+var locations = [];
 
 function loadJSON(callback) {
 
@@ -27,12 +27,11 @@ function loadJSON(callback) {
 	};
 	xobj.send(null);
 }
-
 loadJSON(function (response) {
 
 	// Parse JSON string into array of objects
-	results = JSON.parse(response);
-	
+	var results = JSON.parse(response);
+
 	for (var i = 0; i < results.length; i++) {
 		var result = results[i];
 		//deal with unexisting image
@@ -43,16 +42,15 @@ loadJSON(function (response) {
 		if (!result.price) {
 			result.price = 'who knows if it\'s pricey...';
 		};
-		locations.push(result);
+		appViewModel.myPubs.push(new Location(result, i));
 	}
 
 });
-// This code was generted from Yelp's Fusion API on a SERVER side. So to make stuff work here, 
-// on the client side I just too the generated array of objects and wwill use it further in my project
-var locations = [];
+locations = appViewModel.myPubs();
+console.log(locations);
 
 // Location constructor
-var Location = function (value, index) {
+function Location(value, index) {
 	this.id = index;
 	this.title = value.name;
 
@@ -76,26 +74,6 @@ var Location = function (value, index) {
 	this.marker;
 	this.isClicked = false;
 };
-
-/*
-for (let i = 0; i < results.length; i++) {
-	var result = results[i];
-	var place = new Location (result, i);
-
-	if (result.image_url) {
-		place.imageURL = result.image_url;
-	} else {
-		place.imageURL = 'img/pub-placeholder.jpg';
-	};
-
-	if (result.price) {
-		place.priceRange = result.price;
-	} else {
-		place.priceRange = 'who knows if it\'s pricey...';
-	}
-	locations.push(place);
-}
-*/
 
 function initMap() {
 
@@ -226,8 +204,7 @@ function populateInfoWindow(marker, infowindow) {
 function AppViewModel() {
 	var self = this;
 
-	//self.myPubs = ko.observableArray([]);
-
+	self.myPubs = ko.observableArray([]);
 	self.suggestions = ko.observableArray(locations);
 	self.inputField = ko.observable('');
 
@@ -288,5 +265,4 @@ function AppViewModel() {
 };
 
 var appViewModel = new AppViewModel();
-
 ko.applyBindings(appViewModel);
