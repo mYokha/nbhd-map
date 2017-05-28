@@ -6,22 +6,22 @@ function Location(value, index) {
 	this.title = value.name;
 
 	this.position = {};
-	this.position.lat = value.coordinates.latitude;
-	this.position.lng = value.coordinates.longitude;
+	this.position.lat = value.location.lat;
+	this.position.lng = value.location.lng;
 
 	this.address = {};
-	this.address.street = value.location.address1;
-	this.address.city = value.location.city;
-	this.address.zipcode = value.location.zip_code;
-	this.address.country = value.location.country;
+	this.address.street = value.location.address || 'The address is unknown';
+	this.address.city = value.location.city || 'Liverpool'; 
+	//this.address.zipcode = value.address.zipcode || 'Unknown zip code';
+	this.address.country = value.location.country || 'UK';
 
-	this.yelpProfileURL = value.url;
-	this.phone = value.phone;
-	this.displayPhone = value.display_phone;
-	this.website = '';
-	this.imageURL = value.image_url;
-	this.rating = value.rating;
-	this.priceRange = value.price;
+	this.foursquareProfileURL = 'https://foursquare.com/v/' + value.id;
+	this.phone = value.contact.phone || '';
+	this.displayPhone = value.contact.formattedPhone || 'No phone. Sorry ;(';
+	this.website = value.url || 'No link. You better Google it';
+	this.imageURL = value.image_url || 'img/pub-placeholder.jpg';
+	this.rating = value.rating || 'No rating';
+	this.priceRange = value.price || 'Who knows if it\'s pricey...';
 	this.marker;
 	this.isClicked = false;
 };
@@ -147,13 +147,13 @@ function populateInfoWindow(marker, infowindow) {
 		infowindow.setContent('<div><strong>' + marker.title + '</strong></div><br/>' +
 			location.address.street + '<br>' +
 			location.address.city + '<br>' +
-			location.address.zipcode + '<br>' +
+			//location.address.zipcode + '<br>' +
 			location.address.country + '<br>' +
-			'<a href="' + location.yelpProfileURL + '" target="_blank">Check this place out on Yelp!</a><br>' +
-			'Yelp! rating: ' + location.rating + '<br>' +
+			'<a href="' + location.foursquareProfileURL + '" target="_blank">Check this place out on Foursquare!</a><br>' +
+			'Forsq rating: ' + location.rating + '<br>' +
 			'Price: ' + location.priceRange +
-			'<br><br>' + 'Call here: <a href="tel:' + location.phone + '">' +
-			location.displayPhone + '</a>' + '<br><br>' + '<img src="' + location.imageURL + '" style="width: 200px">');
+			//'<br><br>' + 'Call here: <a href="tel:' + location.phone + '">' +location.displayPhone + '</a>' +
+			'<br><br>' + '<img src="' + location.imageURL + '" style="width: 200px">');
 		infowindow.open(map, marker);
 
 		// Make sure the marker property is cleared if the infowindow is closed.
@@ -170,11 +170,21 @@ function AppViewModel() {
 
 	self.myPubs = ko.observableArray([]);
 
+
+	//Working around foursquare api
+	var client_id = 'ZRZOYO5I4TD5PDUZZOOQ4UNAVORKVMQJJDM5S4YUBNFHD05C';
+	var client_secret = 'LDAYVFPBDALCUPTK1DBDSZC4XF5AHGG1I5IWOTSNI4YW1WXT';
+	//var apiURL = 'https://api.foursquare.com/v2/venues/';
+	var placeId = '4baf7f4ff964a520bd043ce3';
+	//var foursquareURL = apiURL + placeId + '?client_id=' + client_id +  '&client_secret=' + client_secret +'&v=' + foursquareVersion;
+	//var foursquareURL = 'https://api.foursquare.com/v2/venues/search?client_id=' + client_id + '&client_secret=' + client_secret + '&v=20130815&ll=53.430849,-2.960862&query=beer';
+	var foursquareURL = 'https://api.foursquare.com/v2/venues/search?client_id=' + client_id + '&client_secret=' + client_secret + '&v=20130815&ll=53.430849,-2.960862&query=pub';
+
 	function loadJSON(callback) {
 
 		var xobj = new XMLHttpRequest();
 		xobj.overrideMimeType("application/json");
-		xobj.open('GET', 'js/result.json', true);
+		xobj.open('GET', foursquareURL, true);
 		xobj.onreadystatechange = function () {
 			if (xobj.readyState == 4 && xobj.status == "200") {
 
@@ -189,19 +199,11 @@ function AppViewModel() {
 	loadJSON(function (response) {
 
 		// Parse JSON string into array of objects
-		var results = JSON.parse(response);
-
+		var results = JSON.parse(response).response.venues;
+		console.log(JSON.parse(response));
+		console.log(results);
 		for (var i = 0; i < results.length; i++) {
-			var result = results[i];
-			//deal with unexisting image
-			if (!result.image_url) {
-				result.image_url = 'img/pub-placeholder.jpg';
-			}
-			//deal with unexisting price range
-			if (!result.price) {
-				result.price = 'who knows if it\'s pricey...';
-			};
-			self.myPubs.push(new Location(result, i));
+			self.myPubs.push(new Location(results[i], i));
 		}
 
 	});
@@ -263,14 +265,14 @@ function AppViewModel() {
 
 		if (item.isClicked) {
 			// populateInfoWindow(item.marker, infowindow);
-			
+
 			// This is a trigger. It activates smth inside google maps init function 
 			// by being used outside of it... awesome feature
 			google.maps.event.trigger(item.marker, 'click');
 		}
 	};
-	
-	
+
+
 }
 
 var appViewModel = new AppViewModel();
@@ -284,7 +286,7 @@ if (window.innerWidth < 720) {
 	inputField.addEventListener('click', function () {
 		list.style.display = 'block';
 	});
-	
+
 	list.addEventListener('click', function () {
 		list.style.display = 'none';
 	});
