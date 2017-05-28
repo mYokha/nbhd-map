@@ -1,7 +1,6 @@
 *, *:before, *:after {
     box-sizing: border-box;
     font-family: 'Open Sans', sans-serif;
-    outline: none;
 }
 
 body {
@@ -20,23 +19,23 @@ body,
 input {
     font-family: 'Open Sans', sans-serif;
 }
-
-#map {
-	height: 95%;
-}
-
 #search {
 	height: 5%;
 	width: 100%;
 }
 
+#map {
+	height: 95%;
+}
+
+
 #search-bar {
+	height: 100%;
 	width: 100%;
 }
 
 #search-input {
 	height: 100%;
-	padding:10px;
 	width: 100%;
 }
 
@@ -64,7 +63,7 @@ input {
 	max-height: 50%;
 	overflow-y: scroll;
 	position: absolute;
-	z-index: 10000;
+	z-index: 2;
     padding: 0;
     margin: 0;
 }
@@ -74,6 +73,7 @@ input {
 		height: 100%;
 		width: 70%;
 		float: right;
+		top: 0;
 	}
 	
 	#search {
@@ -100,5 +100,11 @@ input {
 	
 	#list-view {
 		width: 20%;
+	}
+}
+
+@media only screen and (max-width: 720px) {
+	#list-view {
+		display: none;
 	}
 }

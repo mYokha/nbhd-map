@@ -1,53 +1,4 @@
-//Link to Udacity's APIs course repo: https://github.com/udacity/ud864
-//Initialize google maps
-var map;
-
-//That's the place where Anfield is
-var center = {
-	lat: 53.430849,
-	lng: -2.960862
-};
-
-//An array to hold 10 closest bars
-var markers = [];
-
 var locations = [];
-
-function loadJSON(callback) {
-
-	var xobj = new XMLHttpRequest();
-	xobj.overrideMimeType("application/json");
-	xobj.open('GET', 'js/result.json', false);
-	xobj.onreadystatechange = function () {
-		if (xobj.readyState == 4 && xobj.status == "200") {
-
-			// Required use of an anonymous callback as .open will NOT return a value but simply returns undefined in asynchronous mode
-			callback(xobj.responseText);
-		}
-	};
-	xobj.send(null);
-}
-loadJSON(function (response) {
-
-	// Parse JSON string into array of objects
-	var results = JSON.parse(response);
-
-	for (var i = 0; i < results.length; i++) {
-		var result = results[i];
-		//deal with unexisting image
-		if (!result.image_url) {
-			result.image_url = 'img/pub-placeholder.jpg';
-		}
-		//deal with unexisting price range
-		if (!result.price) {
-			result.price = 'who knows if it\'s pricey...';
-		};
-		appViewModel.myPubs.push(new Location(result, i));
-	}
-
-});
-locations = appViewModel.myPubs();
-console.log(locations);
 
 // Location constructor
 function Location(value, index) {
@@ -68,15 +19,25 @@ function Location(value, index) {
 	this.phone = value.phone;
 	this.displayPhone = value.display_phone;
 	this.website = '';
-	this.imageURL = '';
+	this.imageURL = value.image_url;
 	this.rating = value.rating;
-	this.priceRange = '';
+	this.priceRange = value.price;
 	this.marker;
 	this.isClicked = false;
 };
 
+//Link to Udacity's APIs course repo: https://github.com/udacity/ud864
 function initMap() {
+	//Initialize google maps
+	var map;
+	//That's the place where Anfield is
+	var center = {
+		lat: 53.430849,
+		lng: -2.960862
+	};
 
+	//An array to hold 10 closest bars
+	var markers = [];
 	// Create a map object and specify the DOM element for display.
 	map = new google.maps.Map(document.getElementById('map'), {
 		center: center,
@@ -111,6 +72,7 @@ function initMap() {
 			google.maps.event.addListener(markerStadium, 'click', function () {
 				infowindow.setContent('<div><strong>' + place.name + '</strong><br>' +
 					'Place ID: ' + place.place_id + '<br><br>' +
+					'<img src="' + 'img/anfield.jpg' + '" style="width: 300px">' + '<br><br>' +
 					place.formatted_address + '</div>');
 				infowindow.open(map, this);
 			});
@@ -156,6 +118,8 @@ function initMap() {
 		bounds.extend(markers[i].position);
 	}
 
+
+
 	// Extend the boundaries of the map for each marker
 	map.fitBounds(bounds);
 }
@@ -185,7 +149,7 @@ function populateInfoWindow(marker, infowindow) {
 			location.address.city + '<br>' +
 			location.address.zipcode + '<br>' +
 			location.address.country + '<br>' +
-			'<a href="' + location.yelpProfileURL + '">Check this place out on Yelp!</a><br>' +
+			'<a href="' + location.yelpProfileURL + '" target="_blank">Check this place out on Yelp!</a><br>' +
 			'Yelp! rating: ' + location.rating + '<br>' +
 			'Price: ' + location.priceRange +
 			'<br><br>' + 'Call here: <a href="tel:' + location.phone + '">' +
@@ -195,7 +159,7 @@ function populateInfoWindow(marker, infowindow) {
 		// Make sure the marker property is cleared if the infowindow is closed.
 		infowindow.addListener('closeclick', function () {
 			infowindow.close();
-			infowindow.setMarker = null;
+			//infowindow.setMarker = null;
 		});
 	}
 }
@@ -205,7 +169,43 @@ function AppViewModel() {
 	var self = this;
 
 	self.myPubs = ko.observableArray([]);
-	self.suggestions = ko.observableArray(locations);
+
+	function loadJSON(callback) {
+
+		var xobj = new XMLHttpRequest();
+		xobj.overrideMimeType("application/json");
+		xobj.open('GET', 'js/result.json', true);
+		xobj.onreadystatechange = function () {
+			if (xobj.readyState == 4 && xobj.status == "200") {
+
+				// Required use of an anonymous callback as .open 
+				// will NOT return a value but simply returns undefined 
+				// in asynchronous mode
+				callback(xobj.responseText);
+			}
+		};
+		xobj.send(null);
+	}
+	loadJSON(function (response) {
+
+		// Parse JSON string into array of objects
+		var results = JSON.parse(response);
+
+		for (var i = 0; i < results.length; i++) {
+			var result = results[i];
+			//deal with unexisting image
+			if (!result.image_url) {
+				result.image_url = 'img/pub-placeholder.jpg';
+			}
+			//deal with unexisting price range
+			if (!result.price) {
+				result.price = 'who knows if it\'s pricey...';
+			};
+			self.myPubs.push(new Location(result, i));
+		}
+
+	});
+	locations = self.myPubs();
 	self.inputField = ko.observable('');
 
 	// This observable is a need. When you put the cursor into the input field
@@ -218,13 +218,19 @@ function AppViewModel() {
 	// Now let's try to implement filtering
 	self.filteredItems = ko.computed(function () {
 		if (self.inputField().length > 0) {
-			var optionsArr = self.suggestions();
+			var optionsArr = self.myPubs();
 			return ko.utils.arrayFilter(optionsArr, function (item) {
+				var chosenItem = item.title.toLowerCase().indexOf(self.inputField().toLowerCase()) > -1;
+				if (!chosenItem) {
+					item.marker.setVisible(false);
+				} else {
+					item.marker.setVisible(true);
+				}
 
-				return (item.title.toLowerCase().indexOf(self.inputField().toLowerCase()) > -1);
+				return chosenItem;
 			});
 		} else {
-			return self.suggestions();
+			return self.myPubs();
 		}
 	});
 
@@ -244,6 +250,7 @@ function AppViewModel() {
 		}
 		if (!item.isClicked) {
 			item.isClicked = true;
+
 		} else {
 			item.isClicked = false;
 		}
@@ -254,15 +261,31 @@ function AppViewModel() {
 		self.isClickedToggle(item, locations);
 		self.liSelected(item.title);
 
-		var infowindow = new google.maps.InfoWindow();
-
 		if (item.isClicked) {
-			populateInfoWindow(item.marker, infowindow);
+			// populateInfoWindow(item.marker, infowindow);
+			
+			// This is a trigger. It activates smth inside google maps init function 
+			// by being used outside of it... awesome feature
+			google.maps.event.trigger(item.marker, 'click');
 		}
-
 	};
-
-};
+	
+	
+}
 
 var appViewModel = new AppViewModel();
 ko.applyBindings(appViewModel);
+
+// A bit of javascript to hide list when it's item is clicked if the screen is narrow
+if (window.innerWidth < 720) {
+	var list = document.getElementById('list-view');
+	var inputField = document.getElementById('search-input');
+
+	inputField.addEventListener('click', function () {
+		list.style.display = 'block';
+	});
+	
+	list.addEventListener('click', function () {
+		list.style.display = 'none';
+	});
+}
