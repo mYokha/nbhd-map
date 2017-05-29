@@ -1,31 +1,47 @@
-var locations = [];
-
 // Location constructor
 function Location(value, index) {
+	
+	// This is for my own usage
 	this.id = index;
+	
+	// Those are the options Foursquare returns for sure
+	
+	// id
+	this.venueId = value.id;
+	
+	// name
 	this.title = value.name;
 
-	this.position = {};
-	this.position.lat = value.location.lat;
-	this.position.lng = value.location.lng;
-
-	this.address = {};
-	this.address.street = value.location.address || 'The address is unknown';
-	this.address.city = value.location.city || 'Liverpool'; 
-	//this.address.zipcode = value.address.zipcode || 'Unknown zip code';
-	this.address.country = value.location.country || 'UK';
-
-	this.foursquareProfileURL = 'https://foursquare.com/v/' + value.id;
+	// contact
 	this.phone = value.contact.phone || '';
-	this.displayPhone = value.contact.formattedPhone || 'No phone. Sorry ;(';
+	this.formattedPhone = value.contact.formattedPhone || 'No phone. Sorry ;(';
+	
+	// location
+	this.position = {
+		lat: value.location.lat,
+		lng: value.location.lng
+	};
+
+	this.address = {
+		street: value.location.address || 'The address is unknown',
+		city: value.location.city || 'Liverpool',
+		country: value.location.country || 'UK'
+	};
+	
+	this.distance = value.location.distance;
+	
+	// verified foursquare account
+	this.verufied = value.verified ? 'Yes' : 'No';
+	
+	
+	this.foursquareProfileURL = 'https://foursquare.com/v/' + value.id;
+	
 	this.website = value.url || 'No link. You better Google it';
-	this.imageURL = value.image_url || 'img/pub-placeholder.jpg';
-	this.rating = value.rating || 'No rating';
-	this.priceRange = value.price || 'Who knows if it\'s pricey...';
 	this.marker;
 	this.isClicked = false;
 };
-
+//An array to hold 10 closest bars
+var markers = [];
 //Link to Udacity's APIs course repo: https://github.com/udacity/ud864
 function initMap() {
 	//Initialize google maps
@@ -35,9 +51,8 @@ function initMap() {
 		lat: 53.430849,
 		lng: -2.960862
 	};
+	
 
-	//An array to hold 10 closest bars
-	var markers = [];
 	// Create a map object and specify the DOM element for display.
 	map = new google.maps.Map(document.getElementById('map'), {
 		center: center,
@@ -61,9 +76,7 @@ function initMap() {
 	// To add the marker to the map, call setMap();
 	markerStadium.setMap(map);
 
-	var infowindow = new google.maps.InfoWindow({
-		content: 'Anfield Road'
-	});
+	var infowindow = new google.maps.InfoWindow();
 	var service = new google.maps.places.PlacesService(map);
 	service.getDetails({
 		placeId: 'ChIJi1MCS2Uhe0gR_3MZ4ldqV4Q'
@@ -89,15 +102,15 @@ function initMap() {
 	var labelIndex = 0;
 
 	// The following group uses the location array to create an array of markers on initialize.
-	for (var i = 0; i < locations.length; i++) {
+	for (var i = 0; i < appViewModel.myPubs().length; i++) {
 
 		// Get the position from the location array.
-		var position = locations[i].position;
-		var title = locations[i].title;
+		var position = appViewModel.myPubs()[i].position;
+		var title = appViewModel.myPubs()[i].title;
 
 
 		// Create a marker per location, and put into markers array.
-		locations[i].marker = new google.maps.Marker({
+		appViewModel.myPubs()[i].marker = new google.maps.Marker({
 			map: map,
 			position: position,
 			title: title,
@@ -108,10 +121,10 @@ function initMap() {
 		});
 
 		// Push the marker to our array of markers.
-		markers.push(locations[i].marker);
+		markers.push(appViewModel.myPubs()[i].marker);
 
 		// Create an onclick event to open an infowindow at each marker.
-		locations[i].marker.addListener('click', function () {
+		appViewModel.myPubs()[i].marker.addListener('click', function () {
 			populateInfoWindow(this, largeInfowindow);
 		});
 
@@ -142,18 +155,17 @@ function populateInfoWindow(marker, infowindow) {
 	if (infowindow.marker != marker) {
 		infowindow.marker = marker;
 		var id = marker.id;
-		var location = getLocation(locations, id);
-		//console.log(location);
-		infowindow.setContent('<div><strong>' + marker.title + '</strong></div><br/>' +
-			location.address.street + '<br>' +
-			location.address.city + '<br>' +
-			//location.address.zipcode + '<br>' +
-			location.address.country + '<br>' +
-			'<a href="' + location.foursquareProfileURL + '" target="_blank">Check this place out on Foursquare!</a><br>' +
-			'Forsq rating: ' + location.rating + '<br>' +
-			'Price: ' + location.priceRange +
-			//'<br><br>' + 'Call here: <a href="tel:' + location.phone + '">' +location.displayPhone + '</a>' +
-			'<br><br>' + '<img src="' + location.imageURL + '" style="width: 200px">');
+		var location = getLocation(appViewModel.myPubs(), id);
+		infowindow.setContent('<span class="info-heading">Title:</span> ' + marker.title + '<br><br>' +
+							  '<span class="info-heading">Venue ID:</span> ' + location.venueId	+ '<br><br>' +
+							  '<span class="info-heading">Phone:</span> <a href="tel:' + location.phone + '">' + location.formattedPhone + '</a>' + '<br><br>' +
+							  '<span class="info-heading">Address:</span> '+'<br>' +
+							  location.address.street + '<br>' +
+							  location.address.city + '<br>' +
+							  location.address.country + '<br><br>' +
+							  '<span class="info-heading">Distance to Anfield:</span> ' + location.distance + 'm<br><br>' +
+							  '<span class="info-heading">Verified Foursquare account:</span> ' + location.verified + '<br><br>' +
+							  '<a href="' + location.foursquareProfileURL + '" target="_blank">Foursquare profile link</a><br><br>');
 		infowindow.open(map, marker);
 
 		// Make sure the marker property is cleared if the infowindow is closed.
@@ -170,7 +182,6 @@ function AppViewModel() {
 
 	self.myPubs = ko.observableArray([]);
 
-
 	//Working around foursquare api
 	var client_id = 'ZRZOYO5I4TD5PDUZZOOQ4UNAVORKVMQJJDM5S4YUBNFHD05C';
 	var client_secret = 'LDAYVFPBDALCUPTK1DBDSZC4XF5AHGG1I5IWOTSNI4YW1WXT';
@@ -178,7 +189,7 @@ function AppViewModel() {
 	var placeId = '4baf7f4ff964a520bd043ce3';
 	//var foursquareURL = apiURL + placeId + '?client_id=' + client_id +  '&client_secret=' + client_secret +'&v=' + foursquareVersion;
 	//var foursquareURL = 'https://api.foursquare.com/v2/venues/search?client_id=' + client_id + '&client_secret=' + client_secret + '&v=20130815&ll=53.430849,-2.960862&query=beer';
-	var foursquareURL = 'https://api.foursquare.com/v2/venues/search?client_id=' + client_id + '&client_secret=' + client_secret + '&v=20130815&ll=53.430849,-2.960862&query=pub';
+	var foursquareURL = 'https://api.foursquare.com/v2/venues/search?client_id=' + client_id + '&client_secret=' + client_secret + '&v=20130815&ll=53.430849,-2.960862&&radius=3000&categoryId=4bf58dd8d48988d155941735,52e81612bcbc57f1066b7a06,4bf58dd8d48988d11b941735';
 
 	function loadJSON(callback) {
 
@@ -193,21 +204,23 @@ function AppViewModel() {
 				// in asynchronous mode
 				callback(xobj.responseText);
 			}
-		};
+		}
 		xobj.send(null);
 	}
 	loadJSON(function (response) {
 
 		// Parse JSON string into array of objects
 		var results = JSON.parse(response).response.venues;
-		console.log(JSON.parse(response));
-		console.log(results);
+		
+
 		for (var i = 0; i < results.length; i++) {
 			self.myPubs.push(new Location(results[i], i));
 		}
 
 	});
-	locations = self.myPubs();
+
+
+	//locations = self.myPubs();
 	self.inputField = ko.observable('');
 
 	// This observable is a need. When you put the cursor into the input field
@@ -237,13 +250,8 @@ function AppViewModel() {
 	});
 
 	self.liSelected = ko.observable();
-
-	self.resetClicks = function (arr) {
-		for (var i = 0; i < arr.length; i++) {
-			arr[i].isClicked = false;
-		}
-	};
-
+	
+	// Changes the condition of Location instance
 	self.isClickedToggle = function (item, arr) {
 		for (var i = 0; i < arr.length; i++) {
 			if (arr[i].id !== item.id) {
@@ -259,24 +267,23 @@ function AppViewModel() {
 
 	}
 
+	// Activates marker... basically it opens marker's infowindow when
+	// click the list item
 	self.activateMarker = function (item) {
-		self.isClickedToggle(item, locations);
+		self.isClickedToggle(item, self.myPubs());
 		self.liSelected(item.title);
 
 		if (item.isClicked) {
-			// populateInfoWindow(item.marker, infowindow);
 
 			// This is a trigger. It activates smth inside google maps init function 
 			// by being used outside of it... awesome feature
 			google.maps.event.trigger(item.marker, 'click');
 		}
-	};
-
-
+	}
 }
-
 var appViewModel = new AppViewModel();
 ko.applyBindings(appViewModel);
+
 
 // A bit of javascript to hide list when it's item is clicked if the screen is narrow
 if (window.innerWidth < 720) {
