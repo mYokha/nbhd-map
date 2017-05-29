@@ -31,8 +31,7 @@ function Location(value, index) {
 	this.distance = value.location.distance;
 	
 	// verified foursquare account
-	this.verufied = value.verified ? 'Yes' : 'No';
-	
+	this.verified = value.verified ? 'Yes' : 'No';
 	
 	this.foursquareProfileURL = 'https://foursquare.com/v/' + value.id;
 	
@@ -40,8 +39,6 @@ function Location(value, index) {
 	this.marker;
 	this.isClicked = false;
 };
-//An array to hold 10 closest bars
-var markers = [];
 //Link to Udacity's APIs course repo: https://github.com/udacity/ud864
 function initMap() {
 	//Initialize google maps
@@ -120,15 +117,12 @@ function initMap() {
 			icon: 'img/beer.png'
 		});
 
-		// Push the marker to our array of markers.
-		markers.push(appViewModel.myPubs()[i].marker);
-
 		// Create an onclick event to open an infowindow at each marker.
 		appViewModel.myPubs()[i].marker.addListener('click', function () {
 			populateInfoWindow(this, largeInfowindow);
 		});
 
-		bounds.extend(markers[i].position);
+		bounds.extend(appViewModel.myPubs()[i].position);
 	}
 
 
@@ -195,7 +189,7 @@ function AppViewModel() {
 
 		var xobj = new XMLHttpRequest();
 		xobj.overrideMimeType("application/json");
-		xobj.open('GET', foursquareURL, true);
+		xobj.open('GET', foursquareURL, false);
 		xobj.onreadystatechange = function () {
 			if (xobj.readyState == 4 && xobj.status == "200") {
 
@@ -250,8 +244,7 @@ function AppViewModel() {
 	});
 
 	self.liSelected = ko.observable();
-	
-	// Changes the condition of Location instance
+
 	self.isClickedToggle = function (item, arr) {
 		for (var i = 0; i < arr.length; i++) {
 			if (arr[i].id !== item.id) {
