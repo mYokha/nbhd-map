@@ -1,21 +1,21 @@
 // Location constructor
 function Location(value, index) {
-	
+
 	// This is for my own usage
 	this.id = index;
-	
+
 	// Those are the options Foursquare returns for sure
-	
+
 	// id
 	this.venueId = value.id;
-	
+
 	// name
 	this.title = value.name;
 
 	// contact
 	this.phone = value.contact.phone || '';
 	this.formattedPhone = value.contact.formattedPhone || 'No phone. Sorry ;(';
-	
+
 	// location
 	this.position = {
 		lat: value.location.lat,
@@ -27,18 +27,18 @@ function Location(value, index) {
 		city: value.location.city || 'Liverpool',
 		country: value.location.country || 'UK'
 	};
-	
+
 	this.distance = value.location.distance;
-	
+
 	// verified foursquare account
 	this.verified = value.verified ? 'Yes' : 'No';
-	
+
 	this.foursquareProfileURL = 'https://foursquare.com/v/' + value.id;
-	
+
 	this.website = value.url || 'No link. You better Google it';
 	this.marker;
 	this.isClicked = false;
-};
+}
 //Link to Udacity's APIs course repo: https://github.com/udacity/ud864
 function initMap() {
 	//Initialize google maps
@@ -48,7 +48,7 @@ function initMap() {
 		lat: 53.430849,
 		lng: -2.960862
 	};
-	
+
 
 	// Create a map object and specify the DOM element for display.
 	map = new google.maps.Map(document.getElementById('map'), {
@@ -86,6 +86,8 @@ function initMap() {
 					place.formatted_address + '</div>');
 				infowindow.open(map, this);
 			});
+		} else {
+			alert('There\'s something wrong with Google Places API.\nEnded up with error status ' + status + '\nPlease try to reload the page. It might fix it... Or google up the status to find out what it means.');
 		}
 	});
 
@@ -93,10 +95,6 @@ function initMap() {
 	markerStadium.addListener('click', function () {
 		infowindow.open(map, markerStadium);
 	});
-
-
-	var labels = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-	var labelIndex = 0;
 
 	// The following group uses the location array to create an array of markers on initialize.
 	for (var i = 0; i < appViewModel.myPubs().length; i++) {
@@ -112,7 +110,6 @@ function initMap() {
 			position: position,
 			title: title,
 			animation: google.maps.Animation.DROP,
-			label: labels[labelIndex++ % labels.length],
 			id: i,
 			icon: 'img/beer.png'
 		});
@@ -125,10 +122,14 @@ function initMap() {
 		bounds.extend(appViewModel.myPubs()[i].position);
 	}
 
-
-
 	// Extend the boundaries of the map for each marker
 	map.fitBounds(bounds);
+
+	google.maps.event.addDomListener(window, 'resize', function () {
+		map.fitBounds(bounds); // `bounds` is a `LatLngBounds` object
+	});
+	// It's a good idea to start KO inside of succesful google maps api call
+	ko.applyBindings(appViewModel);
 }
 
 // This function helps to get a location from locations array by it's id
@@ -151,21 +152,21 @@ function populateInfoWindow(marker, infowindow) {
 		var id = marker.id;
 		var location = getLocation(appViewModel.myPubs(), id);
 		infowindow.setContent('<span class="info-heading">Title:</span> ' + marker.title + '<br><br>' +
-							  '<span class="info-heading">Venue ID:</span> ' + location.venueId	+ '<br><br>' +
-							  '<span class="info-heading">Phone:</span> <a href="tel:' + location.phone + '">' + location.formattedPhone + '</a>' + '<br><br>' +
-							  '<span class="info-heading">Address:</span> '+'<br>' +
-							  location.address.street + '<br>' +
-							  location.address.city + '<br>' +
-							  location.address.country + '<br><br>' +
-							  '<span class="info-heading">Distance to Anfield:</span> ' + location.distance + 'm<br><br>' +
-							  '<span class="info-heading">Verified Foursquare account:</span> ' + location.verified + '<br><br>' +
-							  '<a href="' + location.foursquareProfileURL + '" target="_blank">Foursquare profile link</a><br><br>');
+			'<span class="info-heading">Venue ID:</span> ' + location.venueId + '<br><br>' +
+			'<span class="info-heading">Phone:</span> <a href="tel:' + location.phone + '">' + location.formattedPhone + '</a>' + '<br><br>' +
+			'<span class="info-heading">Address:</span> ' + '<br>' +
+			location.address.street + '<br>' +
+			location.address.city + '<br>' +
+			location.address.country + '<br><br>' +
+			'<span class="info-heading">Distance to Anfield:</span> ' + location.distance + 'm<br><br>' +
+			'<span class="info-heading">Verified Foursquare account:</span> ' + location.verified + '<br><br>' +
+			'<a href="' + location.foursquareProfileURL + '" target="_blank">Foursquare profile link</a><br><br>');
 		infowindow.open(map, marker);
 
 		// Make sure the marker property is cleared if the infowindow is closed.
 		infowindow.addListener('closeclick', function () {
-			infowindow.close();
-			//infowindow.setMarker = null;
+			infowindow.setMarker = null;
+			marker.setAnimation(null);
 		});
 	}
 }
@@ -197,15 +198,17 @@ function AppViewModel() {
 				// will NOT return a value but simply returns undefined 
 				// in asynchronous mode
 				callback(xobj.responseText);
+			} else {
+				alert('Error has occured while processing Foursquare API request:\n' + xobj.status);
 			}
-		}
+		};
 		xobj.send(null);
 	}
+
 	loadJSON(function (response) {
 
 		// Parse JSON string into array of objects
 		var results = JSON.parse(response).response.venues;
-		
 
 		for (var i = 0; i < results.length; i++) {
 			self.myPubs.push(new Location(results[i], i));
@@ -214,21 +217,16 @@ function AppViewModel() {
 	});
 
 
-	//locations = self.myPubs();
 	self.inputField = ko.observable('');
 
 	// This observable is a need. When you put the cursor into the input field
 	// it makes list of titles visible and hides them when cursor is off.
 	self.isSelected = ko.observable(false);
-	//self.setIsSelected = function() {
-	//	self.isSelected(true)
-	//};
 
 	// Now let's try to implement filtering
 	self.filteredItems = ko.computed(function () {
 		if (self.inputField().length > 0) {
-			var optionsArr = self.myPubs();
-			return ko.utils.arrayFilter(optionsArr, function (item) {
+			return ko.utils.arrayFilter(self.myPubs(), function (item) {
 				var chosenItem = item.title.toLowerCase().indexOf(self.inputField().toLowerCase()) > -1;
 				if (!chosenItem) {
 					item.marker.setVisible(false);
@@ -239,43 +237,47 @@ function AppViewModel() {
 				return chosenItem;
 			});
 		} else {
+			for(var i = 0; i< self.myPubs().length; i++){
+				if (self.myPubs()[i].marker) {
+					self.myPubs()[i].marker.setVisible(true);
+				}
+			}
+			
 			return self.myPubs();
 		}
 	});
 
 	self.liSelected = ko.observable();
 
-	self.isClickedToggle = function (item, arr) {
+	self.isClickedReset = function (arr) {
 		for (var i = 0; i < arr.length; i++) {
-			if (arr[i].id !== item.id) {
-				arr[i].isClicked = false;
-			}
+			arr[i].isClicked = false;
+			arr[i].marker.setAnimation(null);
 		}
-		if (!item.isClicked) {
-			item.isClicked = true;
-
-		} else {
-			item.isClicked = false;
-		}
-
-	}
+	};
 
 	// Activates marker... basically it opens marker's infowindow when
 	// click the list item
 	self.activateMarker = function (item) {
-		self.isClickedToggle(item, self.myPubs());
+		self.isClickedReset(self.myPubs());
+		item.isClicked = true;
+		if (item.isClicked) {
+			google.maps.event.trigger(item.marker, 'click');
+			//item.marker.setAnimation(google.maps.Animation.BOUNCE);
+		} else {
+			item.marker.setAnimation(null);
+		}
 		self.liSelected(item.title);
 
 		if (item.isClicked) {
-
-			// This is a trigger. It activates smth inside google maps init function 
-			// by being used outside of it... awesome feature
-			google.maps.event.trigger(item.marker, 'click');
+			item.marker.setAnimation(google.maps.Animation.BOUNCE);
+		} else {
+			item.marker.setAnimation(null);
 		}
-	}
+	};
 }
 var appViewModel = new AppViewModel();
-ko.applyBindings(appViewModel);
+
 
 
 // A bit of javascript to hide list when it's item is clicked if the screen is narrow
@@ -290,4 +292,14 @@ if (window.innerWidth < 720) {
 	list.addEventListener('click', function () {
 		list.style.display = 'none';
 	});
+}
+
+// Google maps loading error handler
+function mapsInitError() {
+	var mapElement = document.getElementById('map');
+	mapElement.style.margin = 'auto';
+	mapElement.style.fontWeight = 700;
+	mapElement.style.fontSize = '48px';
+	mapElement.style.textAlign = 'center';
+	mapElement.innerHTML = 'Oh, no ☹<br> Seems like Google Maps couldn\'t load<br>Try to reload a page, maybe it will help.';
 }
