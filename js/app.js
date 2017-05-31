@@ -267,7 +267,7 @@ if (window.innerWidth < 720) {
 // Google maps loading error handler
 function mapsInitError() {
 	var mapElement = document.getElementById('map');
-	mapElement.setAttribute("data-bind", "text: errMsg")
+	mapElement.setAttribute("data-bind", "text: errMsg");
 	mapElement.style.margin = 'auto';
 	mapElement.style.fontWeight = 700;
 	mapElement.style.fontSize = '48px';
